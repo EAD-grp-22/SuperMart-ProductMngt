@@ -25,11 +25,32 @@ public class ProductService {
 
     private final ProductRepository repository;
     private final InventoryRepository inventoryRepository;
-    private final CallOrderAPIService callOrderAPIService;
     private final ProductMapperService productMapperService;
 
+    private final CallOrderAPIService callOrderAPIService;
 
+    public String addProduct(CreateProductRequest createProductRequest){
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
+        Product product =Product.builder()
+                .name(createProductRequest.getName())
+                .category(createProductRequest.getCategory())
+                .brand(createProductRequest.getBrand())
+                .price(Double.parseDouble(decimalFormat.format(createProductRequest.getPrice())))
+                .inventory(new ArrayList<>())
+                .build();
+        repository.save(product);
+        return "Product Created Successfully - product id : " + product.getId();
+    }
 
+    public List<ProductResponse> getAllProducts(){
+        List<Product> products = repository.findAll();
+        return products.stream().map(productMapperService::mapToProductResponse).toList();
+    }
+
+    public ProductResponse getProductById(String id){
+        Product product = repository.findById(id).get();
+        return productMapperService.mapToProductResponse(product);
+    }
 
     public List<ProductResponse> getProductByName(String name){
         List<Product> products =  repository.findByName(name);
@@ -82,6 +103,23 @@ public class ProductService {
         return null;
     }
 
-
+    public String deleteProduct(String id) {
+        Optional<Product> optionalProduct = repository.findById(id);
+        if (optionalProduct.isPresent()) {
+            List<String> skuCodes = optionalProduct.get().getInventory()
+                    .stream()
+                    .map(Inventory::getSkuCode)
+                    .collect(Collectors.toList());
+            Set <String> usedOrderNumbers=callOrderAPIService.isProductUsedInOrder(skuCodes);
+            if (usedOrderNumbers==null) {
+                inventoryRepository.deleteAllByProductId(id);
+                repository.deleteById(id);
+                return "Product Deleted successfully";
+            } else {
+                return "Product  cannot be deleted since it is used in orders : " + usedOrderNumbers;
+            }
+        }
+        return "Product  not found";
+    }
 
 }

@@ -19,6 +19,13 @@ public class ProductController {
 
     private final ProductService service;
 
+    @GetMapping
+    public List<ProductResponse> getProducts(){ return service.getAllProducts(); }
+
+    @GetMapping("/{id}")
+    public ProductResponse getProduct(@PathVariable  String id){
+        return service.getProductById(id);
+    }
 
     @GetMapping("/name/{name}")
     public List<ProductResponse> getProductByName(@PathVariable String name){
@@ -26,9 +33,7 @@ public class ProductController {
     }
 
     @GetMapping("/brand/{brand}")
-    public List<ProductResponse> getProductsByBrand(@PathVariable String brand) {
-        return service.getProductsByBrand(brand);
-    }
+    public List<ProductResponse> getProductsByBrand(@PathVariable String brand) {return service.getProductsByBrand(brand);}
 
     @GetMapping("category/{category}")
     public List<ProductResponse> getAllProductsByCategory(@PathVariable String category){
@@ -57,11 +62,21 @@ public class ProductController {
         return service.getProductsByCategoryAndPriceRange(category, minPrice, maxPrice);
     }
 
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public String createProduct(@RequestBody CreateProductRequest createProductRequest){
+        return service.addProduct(createProductRequest);
+    }
+
     @PatchMapping
     public String updateProduct(@RequestBody UpdateProductRequest updateProductRequest){
          service.updateProduct(updateProductRequest);
          return "Product with id :" + updateProductRequest.getId() + " updated successfully";
     }
 
+    @DeleteMapping("/{id}")
+    public String deleteProduct(@PathVariable String id){
+        return service.deleteProduct(id);
+    }
 
 }
